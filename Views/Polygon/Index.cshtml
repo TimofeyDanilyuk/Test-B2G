@@ -1,0 +1,69 @@
+﻿@{
+    var points = ViewBag.Points as List<Test_B2G.Models.Point>;
+    var polygonDrawn = (bool)ViewBag.PolygonDrawn;
+    var polygonPoints = ViewBag.PolygonPoints as Test_B2G.Models.Point[];
+}
+
+<h1>Поставьте минимум три точки и нажмите кнопку чтобы нарисовать полигон, после чего нажмите ЛКМ в любом месте чтобы поставить точку.</h1>
+
+<svg id="svgCanvas" width="600" height="400" style="border: 1px solid black;" onmousedown="addPoint(event)">
+    @foreach (var point in points)
+    {
+        <circle cx="@point.X" cy="@point.Y" r="3" fill="red" />
+    }
+    @if (polygonPoints != null)
+    {
+        <polygon points="@string.Join(' ', polygonPoints.Select(p => $"{p.X},{p.Y}"))" stroke="red" fill="none" />
+    }
+</svg>
+<br />
+<button onclick="drawPolygon()">Нарисовать полигон</button>
+<button onclick="clearPolygon()">Очистить полигон</button>
+
+<script>
+    function addPoint(event) {
+        var x = event.offsetX;
+        var y = event.offsetY;
+        fetch('/Polygon/AddPoint', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ X: x, Y: y })
+        }).then(response => response.json()).then(data => {
+            if (data.message) {
+                alert(data.message);
+            } else {
+                // Add the new point to the SVG
+                var svgCanvas = document.getElementById('svgCanvas');
+                var newCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                newCircle.setAttribute("cx", x);
+                newCircle.setAttribute("cy", y);
+                newCircle.setAttribute("r", 3);
+                newCircle.setAttribute("fill", "red");
+                svgCanvas.appendChild(newCircle);
+            }
+        });
+    }
+
+    function drawPolygon() {
+        fetch('/Polygon/DrawPolygon', {
+            method: 'POST'
+        }).then(response => response.json()).then(data => {
+            if (data.message) {
+                alert(data.message);
+            } else {
+                location.reload();
+            }
+        });
+    }
+
+    function clearPolygon() {
+        fetch('/Polygon/ClearPolygon', {
+            method: 'POST'
+        }).then(response => response.json()).then(data => {
+            alert(data.message);
+            location.reload();
+        });
+    }
+</script>
